@@ -24,26 +24,43 @@ export default async function handler(req, res) {
     }
 
     // 環境変数からAPIキーを取得
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.CLAUDE_API_KEY;
 
     if (!apiKey) {
-      console.error('GEMINI_API_KEY is not set');
+      console.error('CLAUDE_API_KEY is not set');
       return res.status(500).json({ error: 'APIキーが設定されていません' });
     }
 
     const prompt = `この人物の表情を「笑っている」「怒っている」「泣いている」「普通の状態」の4つのうち、最も近いもの1つだけで答えてください。もし判断できない場合は「不明」と答えてください。余計な解説は不要です。回答は必ず指定した単語のみにしてください。`;
 
-    // Gemini APIへリクエスト
+    // Claude APIへリクエスト
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+      'https://api.anthropic.com/v1/messages',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        },
         body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              { inlineData: { mimeType: "image/jpeg", data: imageData } }
+          model: 'claude-3-5-haiku-20241022',
+          max_tokens: 50,
+          messages: [{
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: 'image/jpeg',
+                  data: imageData
+                }
+              },
+              {
+                type: 'text',
+                text: prompt
+              }
             ]
           }]
         })
@@ -52,15 +69,15 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Gemini API error:', errorText);
+      console.error('Claude API error:', errorText);
       return res.status(response.status).json({
-        error: 'Gemini APIエラー',
+        error: 'Claude APIエラー',
         details: errorText
       });
     }
 
     const data = await response.json();
-    const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "不明";
+    const result = data.content?.[0]?.text?.trim() || "不明";
 
     return res.status(200).json({ emotion: result });
 

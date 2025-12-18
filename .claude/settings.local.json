@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd secure backend API for emotion analysis\n\n- Add Vercel Serverless Function (api/analyze.js) to handle Gemini API calls securely\n- Move API key to environment variables for security\n- Update frontend to call backend API instead of direct Gemini API\n- Add .env.example for environment variable configuration\n- Add comprehensive README.md with deployment instructions in Japanese\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "WebSearch"
     ]
   }
 }

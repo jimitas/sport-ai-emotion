@@ -54,9 +54,10 @@
                 <video id="videoFeed" autoplay playsinline muted></video>
                 <!-- 解析中オーバーレイ -->
                 <div id="loadingOverlay" class="hidden absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm">
-                    <div class="flex flex-col items-center">
-                        <div class="loading-spinner mb-2"></div>
-                        <span class="text-white text-sm font-bold">AI分析中...</span>
+                    <div class="flex flex-col items-center text-center px-4">
+                        <div class="loading-spinner mb-3"></div>
+                        <span id="loadingStep" class="text-white text-base font-bold mb-1">処理中...</span>
+                        <span id="loadingDetail" class="text-white text-xs opacity-90">しばらくお待ちください</span>
                     </div>
                 </div>
             </div>
@@ -89,6 +90,8 @@
         const resultText = document.getElementById('resultText');
         const subText = document.getElementById('subText');
         const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingStep = document.getElementById('loadingStep');
+        const loadingDetail = document.getElementById('loadingDetail');
 
         // 表情ごとのスタイル設定
         const emotionStyles = {
@@ -98,6 +101,12 @@
             "普通の状態": { color: "bg-green-500", sub: "落ち着いています。安定したパフォーマンスが期待できます。" },
             "不明": { color: "bg-gray-600", sub: "顔がよく見えません。明るい場所で試してください。" }
         };
+
+        // ローディングメッセージを更新
+        function updateLoadingMessage(step, detail) {
+            loadingStep.innerText = step;
+            loadingDetail.innerText = detail;
+        }
 
         // カメラの起動
         async function initCamera() {
@@ -128,13 +137,27 @@
 
         // AI分析の実行
         async function analyzeEmotion() {
-            const base64Data = captureImage();
-            if (!base64Data) return;
-
+            // ステップ1: 画像をキャプチャ
             loadingOverlay.classList.remove('hidden');
             analyzeBtn.disabled = true;
+            updateLoadingMessage('📸 画像をキャプチャしています...', 'カメラから表情の写真を取得中');
+
+            await new Promise(resolve => setTimeout(resolve, 300)); // 視覚的フィードバック
+            const base64Data = captureImage();
+            if (!base64Data) {
+                loadingOverlay.classList.add('hidden');
+                analyzeBtn.disabled = false;
+                return;
+            }
 
             try {
+                // ステップ2: AIサーバーに送信
+                updateLoadingMessage('🚀 AIサーバーに送信中...', '画像データをクラウドに転送しています');
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                // ステップ3: AI分析
+                updateLoadingMessage('🤖 AIが表情を分析中...', 'Claude AIが顔の特徴を読み取っています');
+
                 const response = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -144,6 +167,10 @@
                 if (!response.ok) {
                     throw new Error(`API Error: ${response.status}`);
                 }
+
+                // ステップ4: 結果を受信
+                updateLoadingMessage('✨ 結果を受信しました！', '判定結果を表示します');
+                await new Promise(resolve => setTimeout(resolve, 300));
 
                 const data = await response.json();
                 const result = data.emotion || "不明";
